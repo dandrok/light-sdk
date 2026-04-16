@@ -18,6 +18,8 @@ class LightSdkPlugin : Plugin<Project> {
             "androidx.annotation",
             "org.jetbrains.kotlinx:kotlinx-coroutines",
             "androidx.lifecycle",
+            "androidx.datastore",
+            "com.squareup.okhttp3:okhttp",
         )
 
         val ALLOWED_PLUGINS = setOf(

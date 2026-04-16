@@ -8,33 +8,42 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.viewModelScope
 import com.thelightphone.sdk.InitialScreen
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
+import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class HomeScreenViewModel : LightViewModel() {
-    val state = mutableIntStateOf(0)
+class HomeScreenViewModel(
+    private val dataStore: DataStore<Preferences>,
+) : LightViewModel() {
+
+    val persistedCounter = dataStore.data.map { it[intPreferencesKey("counter")] ?: 0 }
     var job: Job? = null
     override fun onScreenShow(screen: SimpleLightScreen) {
         super.onScreenShow(screen)
         if (job?.isActive == true) return
         job = viewModelScope.launch(Dispatchers.Main) {
-            while(isActive) {
-                println("state: ${state.value}")
-                state.intValue = state.intValue.inc()
+            while (isActive) {
+                dataStore.edit {
+                    it[intPreferencesKey("counter")] = (it[intPreferencesKey("counter")] ?: 0) + 1
+                }
                 delay(1000)
             }
         }
@@ -46,18 +55,18 @@ class HomeScreenViewModel : LightViewModel() {
 }
 
 @InitialScreen
-class HomeScreen : LightScreen<HomeScreenViewModel>() {
+class HomeScreen(sealedActivity: SealedLightActivity) : LightScreen<HomeScreenViewModel>(sealedActivity) {
 
     override val viewModelClass: Class<HomeScreenViewModel>
         get() = HomeScreenViewModel::class.java
 
     override fun createViewModel(): HomeScreenViewModel {
-        return HomeScreenViewModel()
+        return HomeScreenViewModel(dataStore)
     }
 
     @Composable
     override fun Content() {
-        val x by viewModel.state
+        val x by viewModel.persistedCounter.collectAsState(0)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -74,7 +83,7 @@ class HomeScreen : LightScreen<HomeScreenViewModel>() {
                 color = Color.White,
                 modifier = Modifier
                     .padding(top = 16.dp)
-                    .clickable { navigateTo { DetailScreen() }}
+                    .clickable { navigateTo { DetailScreen(it) } }
             )
         }
     }

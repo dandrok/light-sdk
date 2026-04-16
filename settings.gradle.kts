@@ -19,4 +19,4 @@ includeBuild("plugin")
 
 include(":lint-rules")
 include(":sdk")
-include(":app")
+include(":tool")

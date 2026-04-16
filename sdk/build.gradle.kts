@@ -43,6 +43,7 @@ dependencies {
     api(libs.androidx.annotation)
     api(libs.kotlinx.coroutines)
     api(libs.androidx.lifecycle.viewmodel)
+    api(libs.androidx.datastore.preferences)
     lintChecks(project(":lint-rules"))
 
     testImplementation(libs.kotlin.test)

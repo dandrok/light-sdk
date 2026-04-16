@@ -38,5 +38,6 @@ kotlin {
 
 dependencies {
     implementation(project(":sdk"))
+    implementation(libs.okhttp)
     testImplementation(libs.kotlin.test)
 }

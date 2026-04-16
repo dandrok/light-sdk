@@ -1,10 +1,17 @@
 package com.thelightphone.sdk
 
 import androidx.compose.runtime.Composable
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
-abstract class SimpleLightScreen {
+abstract class SimpleLightScreen(sealedActivity: SealedLightActivity) {
+    internal val activity = sealedActivity.activity
+
+    protected val dataStore: DataStore<Preferences>
+        get() = activity.dataStore
+
     @Composable
     abstract fun Content()
 
@@ -13,14 +20,6 @@ abstract class SimpleLightScreen {
     open fun willShow() {}
     open fun willHide() {}
     open fun onAppPause() {}
-
-    internal var activity: LightActivity? = null
-
-    @PublishedApi
-    internal fun requireActivity(): LightActivity {
-        return activity
-            ?: throw IllegalStateException("LightScreen is not attached to a LightActivity")
-    }
 
     internal open fun notifyWillShow() {
         willShow()
@@ -34,18 +33,19 @@ abstract class SimpleLightScreen {
         onAppPause()
     }
 
-    fun navigateTo(screenFactory: () -> SimpleLightScreen) {
-        val screen = screenFactory()
-        screen.activity = activity
-        requireActivity().navigateTo(screen)
+    fun navigateTo(screenFactory: (SealedLightActivity) -> SimpleLightScreen) {
+        val screen = screenFactory(SealedLightActivity(activity))
+        activity.navigateTo(screen)
     }
 
-    fun goBack() {
-        requireActivity().goBack()
+    open fun goBack() {
+        activity.goBack()
     }
 }
 
-abstract class LightScreen<VM : LightViewModel> : SimpleLightScreen() {
+abstract class LightScreen<VM : LightViewModel>(
+    sealedActivity: SealedLightActivity
+) : SimpleLightScreen(sealedActivity) {
     abstract val viewModelClass: Class<VM>
     abstract fun createViewModel(): VM
 
@@ -56,7 +56,7 @@ abstract class LightScreen<VM : LightViewModel> : SimpleLightScreen() {
                 return createViewModel() as T
             }
         }
-        ViewModelProvider(requireActivity(), factory)[viewModelClass]
+        ViewModelProvider(activity, factory)[viewModelClass]
     }
 
     internal override fun notifyWillShow() {
@@ -72,5 +72,11 @@ abstract class LightScreen<VM : LightViewModel> : SimpleLightScreen() {
     internal override fun notifyAppPause() {
         super.notifyAppPause()
         viewModel.onAppPause()
+    }
+
+    override fun goBack() {
+        if (!viewModel.onBackPressed()) {
+            super.goBack()
+        }
     }
 }

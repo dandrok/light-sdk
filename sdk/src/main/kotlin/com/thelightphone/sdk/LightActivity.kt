@@ -1,5 +1,6 @@
 package com.thelightphone.sdk
 
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.datastore.preferences.preferencesDataStore
 
 class LightActivity internal constructor() : ComponentActivity() {
 
@@ -19,7 +21,6 @@ class LightActivity internal constructor() : ComponentActivity() {
 
     internal fun navigateTo(screen: SimpleLightScreen) {
         currentScreen.value?.notifyWillHide()
-        screen.activity = this
         backStack.add(screen)
         screen.notifyWillShow()
         currentScreen.value = screen
@@ -28,7 +29,6 @@ class LightActivity internal constructor() : ComponentActivity() {
     internal fun goBack() {
         currentScreen.value?.let {
             it.notifyWillHide()
-            it.activity = null
         }
         backStack.removeAt(backStack.lastIndex)
         if (backStack.isEmpty()) {
@@ -49,16 +49,17 @@ class LightActivity internal constructor() : ComponentActivity() {
             ?.getString("com.thelightphone.sdk.initialScreen")
             ?: throw IllegalStateException(
                 "LightActivity requires meta-data 'com.thelightphone.sdk.initialScreen' " +
-                "pointing to a SimpleLightScreen subclass"
+                        "pointing to a SimpleLightScreen subclass"
             )
 
         val initial = try {
-            Class.forName(initialClassName).getDeclaredConstructor().newInstance() as SimpleLightScreen
+            Class.forName(initialClassName)
+                .getDeclaredConstructor(SealedLightActivity::class.java)
+                .newInstance(SealedLightActivity(this)) as SimpleLightScreen
         } catch (e: Exception) {
             throw IllegalStateException("Could not instantiate initial screen: $initialClassName", e)
         }
 
-        initial.activity = this
         backStack.add(initial)
         initial.notifyWillShow()
         currentScreen.value = initial
@@ -67,7 +68,9 @@ class LightActivity internal constructor() : ComponentActivity() {
             val screen = currentScreen.value
             if (screen != null) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()) {
                         screen.Content()
                     }
                     if (screen.showBackBar) {
@@ -97,3 +100,9 @@ class LightActivity internal constructor() : ComponentActivity() {
         currentScreen.value?.notifyWillShow()
     }
 }
+
+class SealedLightActivity(internal val activity: LightActivity)
+
+internal val Context.dataStore by preferencesDataStore(
+    name = "DEFAULT_DATASTORE"
+)
