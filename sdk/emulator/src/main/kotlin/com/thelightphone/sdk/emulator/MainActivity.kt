@@ -52,15 +52,6 @@ class MainActivity : ComponentActivity() {
                 "WARNING: LightOS emulator is NOT running as a system app and may not work."
             )
         }
-        LightSdkServer.customServiceMethodResolver = { callingId, methodId, payload ->
-            Log.d("LightEmulator", "unknown service method: $methodId")
-            LightResult.Error(LightResult.ErrorCode.Unknown)
-        }
-        LightSdkServer.pushEndpointFetcher = { callingPackage, token, vapid ->
-            // TODO this will refer to internal http server eventually
-            Log.d("LightEmulator", "getting push endpoint for token: $token, vapid: $vapid")
-            "http://localhost/push/$token"
-        }
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(

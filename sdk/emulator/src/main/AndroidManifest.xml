@@ -3,6 +3,7 @@
     android:sharedUserId="android.uid.system">
 
     <application
+        android:name=".EmulatorApplication"
         android:label="LightOS Emulator"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">

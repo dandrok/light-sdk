@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -30,12 +32,22 @@ android {
         }
     }
 
+    val localProps = Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+
     defaultConfig {
         applicationId = "com.thelightphone.sdk.emulator"
         minSdk = rootProject.ext["minSdk"] as Int
         targetSdk = rootProject.ext["targetSdk"] as Int
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "PUSH_DOMAIN", "\"${localProps.getProperty("pushDomain", "")}\"")
+        buildConfigField("String", "MOLLYSOCKET_URI", "\"${localProps.getProperty("mollysocketUri", "")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -50,6 +62,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.toVersion(rootProject.ext["jvmTarget"] as String)
         targetCompatibility = JavaVersion.toVersion(rootProject.ext["jvmTarget"] as String)
+    }
+
+    packaging {
+        resources {
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/io.netty.*"
+        }
     }
 }
 
@@ -66,4 +85,8 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
     implementation(libs.compose.activity)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.json)
 }
